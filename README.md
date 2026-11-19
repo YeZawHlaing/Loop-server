@@ -1,4 +1,4 @@
-# Interactive Style OS & Trend Discovery Platform
+# Interactive Style OS & Trend Discovery Platform 
 
 A **Content-First, Gamified Social Commerce & Style OS** built for Gen Z and Millennials in Myanmar. Unlike passive inspiration boards or empty social commerce catalogs, this platform combines real-world personal wardrobe utility (**Smart Closet & Beauty Cabinet**), hyper-localized venue discovery (**Places**), and gamified daily crowd-validation (**Fit Check or Skip**) to answer the daily question: *"What should I wear for where I am going today?"*
 
@@ -7,7 +7,7 @@ A **Content-First, Gamified Social Commerce & Style OS** built for Gen Z and Mil
 ## Core Features
 
 1. **User Onboarding & Aesthetic Calibration**
-    - Social & OTP authentication with profile creation.
+    - Stateless JWT authentication (Access & Refresh tokens) with role-based access control (`USER`, `INFLUENCER`, `SELLER`, `ADMIN`).
     - Interactive aesthetic tag selection (`#Streetwear`, `#Y2K`, `#CleanGirl`, `#Minimalist`, etc.).
     - Private logging of physical body metrics (`height`, `weight`, `shoulder_width`, `foot_size`, `skin_tone`, `undertone`, `skin_type`).
 
@@ -20,11 +20,11 @@ A **Content-First, Gamified Social Commerce & Style OS** built for Gen Z and Mil
 
 3. **Gamified "Fit Check or Skip" Daily Voting Loop**
     - Interactive story-card and grid-to-focus voting experience (`FIT` vs. `SKIP`).
-    - Instant post-vote consensus feedback (e.g., *"88% of users in your Body Cluster voted FIT"*).
-    - Daily streak tracking (``) and gated utility unlocks for top daily venue trends.
+    - Instant post-vote consensus feedback (e.g., *"88% of users in your Body Cluster voted FIT"*), backed by high-speed **Redis** vote counters and leaderboards.
+    - Daily streak tracking (`s`) and gated utility unlocks for top daily venue trends.
 
 4. **Smart Closet & Beauty Cabinet**
-    - Digital inventory logging for owned apparel, footwear, and cosmetics (shade codes, quantities, fit notes).
+    - Digital inventory logging for owned apparel, footwear, and cosmetics (shade codes, quantities, fit notes) with media stored on **AWS S3**.
     - Automated **Fit Match Confidence Scores** displayed on community outfit posts.
 
 5. **Social Vlogs, Combo Posts & Reviews**
@@ -34,16 +34,22 @@ A **Content-First, Gamified Social Commerce & Style OS** built for Gen Z and Mil
 
 ## System Architecture
 
-The system uses a **Decoupled Client-Server Single Page Application (SPA)** architecture:
+The platform runs on a **Decoupled Cloud-Native Client-Server Architecture** powered by **Spring Boot**, **MySQL**, **Redis**, **JWT**, and **AWS**:
 
 ```text
-┌───────────────────────────┐       HTTP / JSON       ┌───────────────────────────┐
-│      Client Frontend      │ ◄─────────────────────► │      Backend API Server   │
-│  (AngularJS / Mobile SPA) │      RESTful APIs       │      (Laravel / PHP)      │
-└───────────────────────────┘                         └─────────────┬─────────────┘
-                                                                    │ Eloquent ORM
-                                                                    ▼
-                                                      ┌───────────────────────────┐
-                                                      │     Relational Database   │
-                                                      │       (MySQL / SQL)       │
-                                                      └───────────────────────────┘
+┌───────────────────────────┐       HTTPS / JSON       ┌───────────────────────────┐
+│      Client Frontend      │ ◄──────────────────────► │    Spring Boot REST API   │
+│  (Web SPA / Mobile App)   │      JWT Bearer Auth     │   (Spring Security + JPA) │
+└───────────────────────────┘                          └──┬──────────┬──────────┬──┘
+                                                          │          │          │
+                                    Spring Data JPA       │          │          │ AWS SDK
+                                    ▼                     │          │          ▼
+                      ┌───────────────────────────┐       │          │    ┌───────────────┐
+                      │      MySQL Database       │       │          │    │    AWS S3 /   │
+                      │    (AWS RDS Persistent)   │       │          │    │  CloudFront   │
+                      └───────────────────────────┘       │          │    └───────────────┘
+                                                          ▼          │
+                                            ┌───────────────────────────┐
+                                            │        Redis Cache        │
+                                            │ (Streaks, TVI & Sessions) │
+                                            └───────────────────────────┘
